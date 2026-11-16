@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>Matrix Studio</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2447c8">
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232447c8'/%3E%3Cpath d='M23 14h-9v36h9M41 14h9v36h-9' fill='none' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
+    <style>
+        :root {
+            --bg: #eef2f8;
+            --grid: #dbe3f1;
+            --paper: #fff;
+            --ink: #14213d;
+            --muted: #566581;
+            --line: #c9d3e6;
+            --a1: #2447c8;
+            --a2: #7a3cff;
+            --on: #fff;
+            --hl: #fff1b8;
+            --err: #b3261e;
+            --errbg: #fdecea;
+            --sh: 0 10px 28px rgba(20, 33, 61, .09);
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
+        }
+
+        :root[data-theme=dark] {
+            --bg: #0c1325;
+            --grid: #16213b;
+            --paper: #141e38;
+            --ink: #e9eefb;
+            --muted: #a3b2d0;
+            --line: #2b3a5f;
+            --a1: #7da2ff;
+            --a2: #b394ff;
+            --on: #0c1325;
+            --hl: #4a4215;
+            --err: #ff9d94;
+            --errbg: #3a1a1a;
+            --sh: none;
+            color-scheme: dark
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-padding-top: env(safe-area-inset-top, 0px)
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            background-image: radial-gradient(800px 320px at 88% -60px, rgba(122, 60, 255, .18), transparent), linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: auto, 28px 28px, 28px 28px;
+            color: var(--ink);
+            font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif
+        }
+
+        [hidden] {
+            display: none !important
+        }
+
+        .wrap {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px 16px 56px
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px
+        }
+
+        h1 {
+            font: 700 clamp(32px, 7vw, 50px)/1.05 Georgia, "Iowan Old Style", serif;
+            margin: 0;
+            background: linear-gradient(90deg, var(--a1), var(--a2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        h2 {
+            font: 700 20px/1.2 Georgia, serif;
+            margin: 0
+        }
+
+        .lead {
+            margin: 6px 0 0;
+            color: var(--muted)
+        }
+
+        button,
+        input {
+            font: inherit;
+            color: inherit
+        }
+
+        button {
+            cursor: pointer
+        }
+
+        .hb {
+            display: flex;
+            gap: 8px
+        }
+
+        .ghost {
+            background: var(--paper);
+            border: 1.5px solid var(--line);
+            padding: 9px 14px;
+            border-radius: 9px
+        }
+
+        .ops {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px
+        }
+
+        .op {
+            background: var(--paper);
+            border: 1.5px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+            box-shadow: var(--sh)
+        }
+
+        .op i {
+            display: block;
+            font: 700 21px/1.3 Georgia, serif;
+            font-style: normal
+        }
+
+        .op small {
+            color: var(--muted)
+        }
+
+        .op[aria-pressed=true] {
+            background: linear-gradient(135deg, var(--a1), var(--a2));
+            border-color: transparent;
+            color: var(--on)
+        }
+
+        .op[aria-pressed=true] small {
+            color: var(--on)
+        }
+
+        .note {
+            background: var(--paper);
+            border-left: 6px solid var(--a1);
+            border-radius: 6px 14px 14px 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            box-shadow: var(--sh)
+        }
+
+        .note p {
+            margin: 4px 0
+        }
+
+        .mats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-start
+        }
+
+        .card {
+            background: var(--paper);
+            border: 1.5px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 18px;
+            box-shadow: var(--sh)
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap
+        }
+
+        .size {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+            color: var(--muted)
+        }
+
+        .size input,
+        #k {
+            width: 64px;
+            padding: 6px 8px;
+            border: 1.5px solid var(--line);
+            border-radius: 8px;
+            background: var(--bg);
+            margin-left: 6px
+        }
+
+        .sm {
+            padding: 5px 11px;
+            font-size: 15px
+        }
+
+        .scroll {
+            overflow-x: auto;
+            padding: 2px
+        }
+
+        .br {
+            position: relative;
+            display: inline-block;
+            padding: 8px 24px
+        }
+
+        .br::before,
+        .br::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            border: 3px solid var(--a1)
+        }
+
+        .br::before {
+            left: 0;
+            border-right: 0;
+            border-radius: 6px 0 0 6px
+        }
+
+        .br::after {
+            right: 0;
+            border-left: 0;
+            border-radius: 0 6px 6px 0
+        }
+
+        .mx {
+            display: grid;
+            gap: 6px
+        }
+
+        .mx input,
+        .mx span {
+            height: 44px;
+            text-align: center;
+            border-radius: 8px;
+            font: 500 18px/44px Georgia, serif
+        }
+
+        .mx input {
+            width: 58px;
+            border: 1.5px solid var(--line);
+            background: var(--bg);
+            padding: 0
+        }
+
+        .mx input.hi {
+            background: var(--hl);
+            border-color: var(--a1)
+        }
+
+        .mx span {
+            display: block;
+            min-width: 58px;
+            padding: 0 10px;
+            background: var(--hl);
+            cursor: default
+        }
+
+        @media(prefers-reduced-motion:no-preference) {
+            .mx span {
+                animation: pop .35s both;
+                animation-delay: var(--d)
+            }
+
+            @keyframes pop {
+                from {
+                    opacity: 0;
+                    transform: scale(.85)
+                }
+            }
+        }
+
+        input:focus-visible,
+        button:focus-visible {
+            outline: 3px solid var(--a1);
+            outline-offset: 2px
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin: 18px 0
+        }
+
+        .go {
+            background: linear-gradient(135deg, var(--a1), var(--a2));
+            color: var(--on);
+            border: 0;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 700
+        }
+
+        .seg {
+            display: flex;
+            border: 1.5px solid var(--line);
+            border-radius: 9px;
+            overflow: hidden
+        }
+
+        .seg button {
+            background: none;
+            border: 0;
+            padding: 6px 12px
+        }
+
+        .seg [aria-pressed=true] {
+            background: var(--a1);
+            color: var(--on)
+        }
+
+        .empty,
+        .cap {
+            color: var(--muted);
+            margin: 6px 0 0
+        }
+
+        .big {
+            font: 700 36px/1.2 Georgia, serif;
+            margin: 4px 0
+        }
+
+        .err {
+            background: var(--errbg);
+            color: var(--err);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin: 0;
+            font-weight: 700
+        }
+
+        .tools {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px
+        }
+
+        details {
+            margin-top: 16px;
+            border-top: 1.5px solid var(--line);
+            padding-top: 10px
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: 700
+        }
+
+        #steps p {
+            margin: 6px 0;
+            font-size: 16px
+        }
+
+        #cardH {
+            margin-top: 16px
+        }
+
+        #hist {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        #hist .op {
+            padding: 6px 12px;
+            box-shadow: none
+        }
+
+        footer {
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 15px
+        }
+
+        #toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            transform: translateX(-50%);
+            background: var(--ink);
+            color: var(--bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s
+        }
+
+        #toast.on {
+            opacity: 1
+        }
+
+        .hb {
+            flex-wrap: wrap;
+            justify-content: flex-end
+        }
+
+        .chip {
+            display: inline-block;
+            align-self: center;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 99px;
+            border: 1.5px solid var(--line);
+            background: var(--paper);
+            color: var(--muted)
+        }
+
+        #net[data-on=true]::first-letter {
+            color: #1a9d5c
+        }
+
+        #net[data-on=false]::first-letter {
+            color: #d98a00
+        }
+
+        .pr {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 12px;
+            max-width: 380px
+        }
+
+        .pr span {
+            background: var(--bg);
+            border: 1.5px solid var(--line);
+            border-radius: 99px;
+            padding: 1px 10px;
+            font-size: 14px;
+            color: var(--muted)
+        }
+
+        .mx span {
+            box-shadow: inset 0 -3px 0 var(--a1)
+        }
+
+        .go {
+            box-shadow: 0 8px 20px rgba(36, 71, 200, .35)
+        }
+
+        .actions .ghost {
+            padding: 12px 20px
+        }
+
+        @media(prefers-reduced-motion:no-preference) {
+            .op {
+                transition: transform .15s
+            }
+
+            .op:hover {
+                transform: translateY(-2px)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header>
+            <div>
+                <h1>Matrix Studio</h1>
+                <p class="lead">Exact matrix calculator.</p>
+            </div>
+            <div class="hb"><span class="chip" id="net" title="Everything runs on your device">● Works
+                    offline</span><button class="ghost" id="inst" hidden>Install app</button><button class="ghost"
+                    id="theme" aria-label="Switch light or dark theme">◐</button></div>
+        </header>
+        <nav class="ops" id="ops" aria-label="Operation"></nav>
+        <section class="note" id="note" aria-live="polite"></section>
+        <div class="mats">
+            <article class="card" id="cardA">
+                <div class="row">
+                    <h2>Matrix A</h2><button class="ghost sm" data-clr="A">Clear</button>
+                </div>
+                <div class="size"><label>Rows<input type="number" id="rowsA" min="1" max="6"
+                            value="2"></label><label>Columns<input type="number" id="colsA" min="1" max="6"
+                            value="2"></label></div>
+                <div class="scroll">
+                    <div class="br">
+                        <div class="mx" id="gA"></div>
+                    </div>
+                </div>
+                <div class="pr" id="propsA" aria-label="Properties of matrix A"></div>
+            </article>
+            <article class="card" id="cardB">
+                <div class="row">
+                    <h2>Matrix B</h2><button class="ghost sm" data-clr="B">Clear</button>
+                </div>
+                <div class="size"><label>Rows<input type="number" id="rowsB" min="1" max="6"
+                            value="2"></label><label>Columns<input type="number" id="colsB" min="1" max="6"
+                            value="2"></label></div>
+                <div class="scroll">
+                    <div class="br">
+                        <div class="mx" id="gB"></div>
+                    </div>
+                </div>
+            </article>
+            <article class="card" id="cardK" hidden>
+                <h2>Scalar</h2>
+                <p class="cap">Multiply every number in A by k.</p><label>k =<input id="k" value="2"
+                        inputmode="decimal"></label>
+            </article>
+        </div>
+        <div class="actions"><button class="go" id="go">Calculate</button><button class="ghost" id="swap">Swap A ⇄
+                B</button></div>
+        <section class="card" aria-live="polite">
+            <div class="row">
+                <h2>Result</h2>
+                <div class="seg" id="seg"><button data-m="frac" aria-pressed="true">Fractions</button><button
+                        data-m="dec" aria-pressed="false">Decimals</button></div>
+            </div>
+            <div id="out"></div>
+            <div class="tools" id="tools" hidden><button class="ghost sm" id="useA">Use result as A</button><button
+                    class="ghost sm" id="cp">Copy to clipboard</button></div>
+            <details open id="wk" hidden>
+                <summary>Show the working</summary>
+                <div id="steps"></div>
+            </details>
+        </section>
+        <section class="card" id="cardH" hidden>
+            <div class="row">
+                <h2>Recent</h2><button class="ghost sm" id="hclr">Clear history</button>
+            </div>
+            <div id="hist"></div>
+        </section>
+        <footer>Fractions are computed exactly, with no rounding errors. Tips: use the arrow keys to move between cells
+            and Enter to calculate. Paste a block of numbers from Excel into any cell to fill the whole matrix. Hover
+            over a result cell to see which numbers it came from.</footer>
+    </div>
+    <div id="toast" role="status"></div>
+    <script>
+        /*CORE*/
+        const gcd = (a, b) => { if (a < 0n) a = -a; if (b < 0n) b = -b; while (b) [a, b] = [b, a % b]; return a };
+        class F {
+            constructor(n, d = 1n) { if (d < 0n) { n = -n; d = -d } const g = gcd(n, d) || 1n; this.n = n / g; this.d = d / g }
+            add(o) { return new F(this.n * o.d + o.n * this.d, this.d * o.d) }
+            sub(o) { return new F(this.n * o.d - o.n * this.d, this.d * o.d) }
+            mul(o) { return new F(this.n * o.n, this.d * o.d) }
+            div(o) { return new F(this.n * o.d, this.d * o.n) }
+            neg() { return new F(-this.n, this.d) }
+            get z() { return this.n === 0n }
+            eq(o) { return this.n === o.n && this.d === o.d }
+            str(m) {
+                if (m === "dec") { const v = Math.round(Number(this.n) / Number(this.d) * 1e4) / 1e4; return v === 0 ? (this.z ? "0" : (Number(this.n) / Number(this.d)).toExponential(2).replace("-", "−")) : String(v).replace("-", "−") }
+                return (this.n < 0n ? "−" : "") + (this.n < 0n ? -this.n : this.n) + (this.d === 1n ? "" : "/" + this.d)
+            }
+        }
+        const Z = new F(0n), O = new F(1n);
+        const P = s => {
+            s = s.trim().replace(/−/g, "-"); if (s === "") return Z;
+            const i = s.indexOf("/");
+            if (i > 0) { const a = P(s.slice(0, i)), b = P(s.slice(i + 1)); return a && b && !b.z ? a.div(b) : null }
+            const m = s.match(/^([+-]?)(\d*)\.?(\d*)$/);
+            if (!m || (m[2] === "" && m[3] === "")) return null;
+            const n = BigInt((m[2] || "0") + m[3]); return new F(m[1] === "-" ? -n : n, 10n ** BigInt(m[3].length))
+        };
+        const mm = (A, B) => A.map(r => B[0].map((_, j) => r.reduce((s, v, k) => s.add(v.mul(B[k][j])), Z)));
+        const tr = A => A[0].map((_, j) => A.map(r => r[j]));
+        function det(M) {
+            const n = M.length, a = M.map(r => [...r]); let d = O;
+            for (let i = 0; i < n; i++) {
+                const p = a.findIndex((r, k) => k >= i && !r[i].z); if (p < 0) return Z;
+                if (p !== i) { [a[p], a[i]] = [a[i], a[p]]; d = d.neg() }
+                d = d.mul(a[i][i]);
+                for (let k = i + 1; k < n; k++) { const f = a[k][i].div(a[i][i]); for (let j = i; j < n; j++)a[k][j] = a[k][j].sub(f.mul(a[i][j])) }
+            }
+            return d
+        }
+        function inv(M) {
+            const n = M.length, a = M.map((r, i) => [...r, ...M.map((_, j) => i === j ? O : Z)]);
+            for (let i = 0; i < n; i++) {
+                const p = a.findIndex((r, k) => k >= i && !r[i].z); if (p < 0) return null;
+                [a[p], a[i]] = [a[i], a[p]]; const f = a[i][i]; a[i] = a[i].map(v => v.div(f));
+                for (let k = 0; k < n; k++)if (k !== i) { const g = a[k][i]; a[k] = a[k].map((v, j) => v.sub(g.mul(a[i][j]))) }
+            }
+            return a.map(r => r.slice(n))
+        }
+        function rank(M) { const a = M.map(r => [...r]); let r = 0; for (let c = 0; c < a[0].length && r < a.length; c++) { const p = a.findIndex((row, k) => k >= r && !row[c].z); if (p < 0) continue;[a[p], a[r]] = [a[r], a[p]]; for (let k = r + 1; k < a.length; k++) { const f = a[k][c].div(a[r][c]); for (let j = c; j < a[0].length; j++)a[k][j] = a[k][j].sub(f.mul(a[r][j])) } r++ } return r }
+        /*END*/
+        const $ = s => document.querySelector(s), sz = m => m.length + "×" + m[0].length;
+        const OPS = {
+            add: { n: "Add", s: "A + B", two: 1, note: [["Rule", "A and B need the same number of rows and the same number of columns."], ["Example", "2×3 + 2×3 works. 2×3 + 3×2 does not."], ["How it works", "Add the numbers in the same position."]] },
+            sub: { n: "Subtract", s: "A − B", two: 1, note: [["Rule", "A and B need the same number of rows and the same number of columns."], ["Example", "3×3 − 3×3 works. 3×3 − 3×2 does not."], ["How it works", "Subtract the numbers in the same position."]] },
+            mul: { n: "Multiply", s: "A × B", two: 1, note: [["Rule", "The number of columns of A must equal the number of rows of B."], ["Example", "2×3 × 3×2 works and gives 2×2. 2×3 × 2×3 does not."], ["How it works", "Multiply each row of A by each column of B, then add the products. A × B is not always equal to B × A."]] },
+            scalar: { n: "Scalar", s: "k × A", k: 1, note: [["Rule", "Any size of matrix works. k can be any number, such as 3, −2.5 or 1/2."], ["How it works", "Multiply every number in A by k."]] },
+            trans: { n: "Transpose", s: "Aᵀ", note: [["Rule", "Any size of matrix works."], ["How it works", "Rows become columns. A 2×3 matrix becomes 3×2."]] },
+            det: { n: "Determinant", s: "det A", note: [["Rule", "The matrix must be square: rows equal columns, such as 2×2 or 3×3."], ["2×2 formula", "For the rows [a b] and [c d], det = a×d − b×c."], ["Remember", "If the determinant is 0, the matrix has no inverse."]] },
+            inv: { n: "Inverse", s: "A⁻¹", note: [["Rule", "The matrix must be square and its determinant must not be 0."], ["Example", "A 2×2 matrix with det = −2 works. A 2×3 matrix is not square."], ["Check", "A × A⁻¹ gives the identity matrix. This app verifies it for you."]] },
+            solve: { n: "Solve", s: "Ax = B", two: 1, note: [["Rule", "A must be square (n×n) and B must have n rows. B can be one column (one system) or several columns."], ["Example", "2x + y = 5 and x − y = 1 gives A = [2 1 ; 1 −1] and B = [5 ; 1]. The answer is x = 2, y = 1."], ["How it works", "x = A⁻¹ × B, computed with exact fractions. The app then checks that A × x = B."]] }
+        };
+        let op = "add", mode = "frac", ctx = null;
+        const dim = id => [Math.min(6, Math.max(1, +$("#rows" + id).value || 1)), Math.min(6, Math.max(1, +$("#cols" + id).value || 1))];
+        const vals = id => [...$("#g" + id).querySelectorAll("input")].map(i => i.value);
+        function grid(id) {
+            const [r, c] = dim(id), el = $("#g" + id), old = vals(id), oc = +el.dataset.c || 0;
+            el.innerHTML = ""; el.dataset.c = c; el.style.gridTemplateColumns = `repeat(${c},58px)`;
+            for (let i = 0; i < r; i++)for (let j = 0; j < c; j++) {
+                const x = document.createElement("input"); x.inputMode = "decimal"; x.autocomplete = "off"; x.placeholder = "0";
+                x.dataset.r = i; x.dataset.c = j; x.setAttribute("aria-label", `Matrix ${id}, row ${i + 1}, column ${j + 1}`);
+                x.value = j < oc && old[i * oc + j] !== undefined ? old[i * oc + j] : ""; el.appendChild(x)
+            }
+        }
+        function setMat(id, r, c, v) { $("#rows" + id).value = r; $("#cols" + id).value = c; $("#g" + id).dataset.c = 0; grid(id);[...$("#g" + id).querySelectorAll("input")].forEach((x, i) => x.value = v[i] ?? ""); props() }
+        function read(id) {
+            const [r, c] = dim(id), v = vals(id), m = [];
+            for (let i = 0; i < r; i++) { m.push([]); for (let j = 0; j < c; j++) { const n = P(v[i * c + j]); if (!n) throw Error(`Matrix ${id}, row ${i + 1}, column ${j + 1} is not a valid number. Use a value like 3, −2.5 or 1/2.`); m[i].push(n) } }
+            return m
+        }
+        function steps(c, s) {
+            const { op, A, B, R, k } = c, p = x => x.n < 0n ? `(${s(x)})` : s(x), L = [], cell = f => R.forEach((r, i) => r.forEach((v, j) => L.push(`Row ${i + 1}, column ${j + 1}: ${f(i, j)} = <b>${s(v)}</b>`)));
+            if (op === "add" || op === "sub") cell((i, j) => `${s(A[i][j])} ${op === "add" ? "+" : "−"} ${p(B[i][j])}`);
+            else if (op === "mul") { L.push("Each result cell = (row of A) · (column of B): multiply matching numbers, then add."); cell((i, j) => A[i].map((a, t) => `${p(a)}×${p(B[t][j])}`).join(" + ")) }
+            else if (op === "scalar") cell((i, j) => `${p(k)} × ${p(A[i][j])}`);
+            else if (op === "trans") L.push("Row i of A becomes column i of the result.", "Element A[i][j] moves to position [j][i].");
+            else if (op === "solve") { L.push(`det(A) = ${s(c.d)}, which is not 0, so exactly one solution exists.`, "Solve with x = A⁻¹ × B, using exact fractions."); R.forEach((r, i) => r.forEach((v, j) => L.push(`${R[0].length > 1 ? `Column ${j + 1}: ` : ""}x${i + 1} = <b>${s(v)}</b>`))); L.push(`Check: A × x = B → ${mm(A, R).every((r, i) => r.every((v, j) => v.eq(B[i][j]))) ? "verified exactly ✔" : "mismatch"}`) }
+            else {
+                const n = A.length, d = c.d;
+                if (op === "det") {
+                    if (n === 1) L.push(`det = <b>${s(d)}</b>`);
+                    else if (n === 2) { const [[a, b], [e, f]] = A; L.push(`det = a×d − b×c = ${p(a)}×${p(f)} − ${p(b)}×${p(e)} = <b>${s(d)}</b>`) }
+                    else if (n === 3) {
+                        const [x, y, z] = A, m = [y[1].mul(z[2]).sub(y[2].mul(z[1])), y[0].mul(z[2]).sub(y[2].mul(z[0])), y[0].mul(z[1]).sub(y[1].mul(z[0]))];
+                        L.push("Expand along the first row (cofactors):", `det = ${p(x[0])}×${p(m[0])} − ${p(x[1])}×${p(m[1])} + ${p(x[2])}×${p(m[2])} = <b>${s(d)}</b>`)
+                    }
+                    else L.push("Gaussian elimination reduces the matrix to upper-triangular form. The determinant is the product of the diagonal, and each row swap flips the sign.", `det = <b>${s(d)}</b>`)
+                } else {
+                    L.push(`det(A) = ${s(d)}, which is not 0, so the inverse exists.`);
+                    if (n === 2) { const [[a, b], [e, f]] = A; L.push(`A⁻¹ = (1/det) × [ d  −b ; −c  a ] = (1/${p(d)}) × [ ${s(f)}  ${s(b.neg())} ; ${s(e.neg())}  ${s(a)} ]`) }
+                    else L.push("Gauss-Jordan: row-reduce [A | I] until the left side becomes I. The right side is then A⁻¹.");
+                    const ok = mm(A, R).every((r, i) => r.every((v, j) => v.eq(i === j ? O : Z)));
+                    L.push(`Check: A × A⁻¹ = I → ${ok ? "verified exactly ✔" : "mismatch"}`)
+                }
+            }
+            return L
+        }
+        function render() {
+            const c = ctx; if (!c) return; const s = x => x.str(mode);
+            $("#tools").hidden = $("#wk").hidden = false; $("#useA").hidden = c.op === "det";
+            $("#out").innerHTML = c.op === "det" ? `<p class="big">det(A) = ${s(c.d)}</p>` :
+                `<div class="scroll"><div class="br"><div class="mx" style="grid-template-columns:repeat(${c.R[0].length},auto)">${c.R.map((r, i) => r.map((v, j) => `<span data-i="${i}" data-j="${j}" style="--d:${(i * r.length + j) * 30}ms">${s(v)}</span>`).join("")).join("")}</div></div></div><p class="cap">${c.op === "solve" ? "Solution x" : sz(c.R) + " matrix"}</p>`;
+            $("#steps").innerHTML = steps(c, s).map(l => `<p>${l}</p>`).join("")
+        }
+        function fail(msg) { ctx = null; $("#out").innerHTML = `<p class="err" role="alert">${msg}</p>`; $("#tools").hidden = $("#wk").hidden = true }
+        function calc() {
+            try {
+                const o = OPS[op], A = read("A"), B = o.two ? read("B") : null; let R = null, k = null, d = null;
+                if (op === "add" || op === "sub") {
+                    if (sz(A) !== sz(B)) throw Error(`A and B must be the same size to ${op === "add" ? "add" : "subtract"}. A is ${sz(A)} and B is ${sz(B)}. Change the rows or columns so they match.`);
+                    R = A.map((r, i) => r.map((v, j) => op === "add" ? v.add(B[i][j]) : v.sub(B[i][j])))
+                } else if (op === "mul") {
+                    if (A[0].length !== B.length) throw Error(`The columns of A (${A[0].length}) must equal the rows of B (${B.length}). Change the size of A or B.`);
+                    R = mm(A, B)
+                } else if (op === "scalar") {
+                    k = $("#k").value.trim() === "" ? null : P($("#k").value); if (!k) throw Error("k must be a valid number, such as 3, −2.5 or 1/2.");
+                    R = A.map(r => r.map(v => v.mul(k)))
+                } else if (op === "trans") R = tr(A);
+                else if (op === "solve") {
+                    if (A.length !== A[0].length) throw Error(`A must be square to solve Ax = B, but it is ${sz(A)}. Make the rows equal to the columns.`);
+                    if (B.length !== A.length) throw Error(`B must have ${A.length} rows to match A, but it has ${B.length}. Change the rows of B.`);
+                    d = det(A); if (d.z) throw Error("det(A) = 0, so this system has no single (unique) solution. It may have no solution or infinitely many. Change one or more values.");
+                    R = mm(inv(A), B)
+                } else {
+                    if (A.length !== A[0].length) throw Error(`Matrix A must be square, but it is ${sz(A)}. Make the rows equal to the columns.`);
+                    d = det(A); if (op === "inv") { R = inv(A); if (!R) throw Error("This matrix is singular (its determinant is 0), so it has no inverse. Change one or more values.") }
+                }
+                ctx = { op, A, B, k, R, d }; render(); save()
+            } catch (e) { fail(e.message) }
+        }
+        function setOp(k) {
+            op = k; ctx = null; document.querySelectorAll("#ops .op").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+            $("#note").innerHTML = OPS[k].note.map(([a, b]) => `<p><b>${a}:</b> ${b}</p>`).join("");
+            $("#cardB").hidden = !OPS[k].two; $("#swap").hidden = !OPS[k].two; $("#cardK").hidden = !OPS[k].k;
+            $("#out").innerHTML = '<p class="empty">Fill in the matrices and select Calculate.</p>'; $("#tools").hidden = $("#wk").hidden = true
+        }
+        /* history, copy, theme */
+        const HK = "ms-history", hist = () => { try { return JSON.parse(localStorage.getItem(HK)) || [] } catch { return [] } };
+        const snap = id => ({ r: dim(id)[0], c: dim(id)[1], v: vals(id) });
+        function drawHist() { const h = hist(); $("#cardH").hidden = !h.length; $("#hist").innerHTML = h.map((e, i) => `<button class="op" data-h="${i}">${OPS[e.op].s} <small>${e.A.r}×${e.A.c}</small></button>`).join("") }
+        function save() { try { const h = hist(); h.unshift({ op, A: snap("A"), B: snap("B"), k: $("#k").value }); localStorage.setItem(HK, JSON.stringify(h.slice(0, 8))) } catch { } drawHist() }
+        const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); setTimeout(() => t.classList.remove("on"), 1600) };
+        const copy = async t => { try { await navigator.clipboard.writeText(t) } catch { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove() } toast("Copied to clipboard") };
+        const asc = v => v.str(mode).replace("−", "-");
+        /* wiring */
+        $("#ops").innerHTML = Object.keys(OPS).map(k => `<button class="op" data-k="${k}" aria-pressed="false"><i>${OPS[k].s}</i><small>${OPS[k].n}</small></button>`).join("");
+        $("#ops").addEventListener("click", e => { const b = e.target.closest(".op"); if (b) setOp(b.dataset.k) });
+        ["A", "B"].forEach(id => ["rows", "cols"].forEach(t => $("#" + t + id).addEventListener("change", () => { grid(id); props() })));
+        document.querySelectorAll("[data-clr]").forEach(b => b.onclick = () => { $("#g" + b.dataset.clr).querySelectorAll("input").forEach(i => i.value = ""); props() });
+        $("#go").onclick = calc;
+        $("#seg").addEventListener("click", e => { const b = e.target.closest("[data-m]"); if (!b) return; mode = b.dataset.m; document.querySelectorAll("#seg button").forEach(x => x.setAttribute("aria-pressed", x === b)); render(); props() });
+        $("#useA").onclick = () => { if (!ctx || !ctx.R) return; const R = ctx.R; setMat("A", R.length, R[0].length, R.flat().map(v => v.str("frac"))); toast("Result moved to Matrix A") };
+        $("#cp").onclick = () => ctx && copy(ctx.op === "det" ? "det(A) = " + asc(ctx.d) : ctx.R.map(r => r.map(asc).join("\t")).join("\n"));
+        $("#hist").addEventListener("click", e => { const b = e.target.closest("[data-h]"); if (!b) return; const h = hist()[+b.dataset.h]; setOp(h.op);["A", "B"].forEach(id => setMat(id, h[id].r, h[id].c, h[id].v)); $("#k").value = h.k; calc() });
+        $("#hclr").onclick = () => { try { localStorage.removeItem(HK) } catch { } drawHist() };
+        document.addEventListener("keydown", e => {
+            const t = e.target; if (!t.matches || !t.matches(".mx input")) return;
+            if (e.key === "Enter") { e.preventDefault(); return calc() }
+            const d = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key]; if (!d) return;
+            const n = $(`#${t.closest(".mx").id} input[data-r="${+t.dataset.r + d[0]}"][data-c="${+t.dataset.c + d[1]}"]`); if (n) { e.preventDefault(); n.focus(); n.select() }
+        });
+        const hl = (i, j, on) => {
+            const q = (id, r, c) => [...document.querySelectorAll(`#g${id} input${r != null ? `[data-r="${r}"]` : ""}${c != null ? `[data-c="${c}"]` : ""}`)];
+            let t = []; if (op === "mul") t = [...q("A", i, null), ...q("B", null, j)]; else if (op === "add" || op === "sub") t = [...q("A", i, j), ...q("B", i, j)]; else if (op === "scalar") t = q("A", i, j); else if (op === "trans") t = q("A", j, i);
+            t.forEach(x => x.classList.toggle("hi", on))
+        };
+        ["over", "out"].forEach(n => $("#out").addEventListener("mouse" + n, e => { const s = e.target.closest("span[data-i]"); if (s) hl(+s.dataset.i, +s.dataset.j, n === "over") }));
+        function props() {
+            const el = $("#propsA");
+            try {
+                const A = read("A"), sq = A.length === A[0].length, t = [sz(A), "rank " + rank(A)];
+                if (sq) {
+                    const d = det(A); t.push("det " + d.str(mode), "trace " + A.reduce((s, r, i) => s.add(r[i]), Z).str(mode), d.z ? "singular" : "invertible");
+                    if (A.every((r, i) => r.every((v, j) => v.eq(A[j][i])))) t.push("symmetric");
+                    if (A.every((r, i) => r.every((v, j) => v.eq(i === j ? O : Z)))) t.push("identity")
+                }
+                el.innerHTML = t.map(x => `<span>${x}</span>`).join("")
+            } catch { el.innerHTML = "<span>Fix the highlighted entries to see properties</span>" }
+        }
+        $("#gA").addEventListener("input", props);
+        $("#swap").onclick = () => { const a = snap("A"), b = snap("B"); setMat("A", b.r, b.c, b.v); setMat("B", a.r, a.c, a.v); toast("Swapped A and B") };
+        document.addEventListener("paste", e => {
+            const t = e.target; if (!t.matches || !t.matches(".mx input")) return;
+            const rows = (e.clipboardData || window.clipboardData).getData("text").trim().split(/\r?\n/).map(l => l.trim().split(/[\t ,;]+/));
+            if (rows.length === 1 && rows[0].length === 1) return;
+            e.preventDefault(); const id = t.closest(".mx").id.slice(1), r = Math.min(6, rows.length), c = Math.min(6, Math.max(...rows.map(x => x.length)));
+            setMat(id, r, c, rows.slice(0, r).flatMap(x => Array.from({ length: c }, (_, j) => x[j] ?? ""))); toast(`Pasted a ${r}×${c} matrix into ${id}`)
+        });
+        const net = () => { $("#net").textContent = navigator.onLine ? "● Online · also works offline" : "● Offline · all features work"; $("#net").dataset.on = navigator.onLine };
+        addEventListener("online", net); addEventListener("offline", net); net();
+        const root = document.documentElement; let th; try { th = localStorage.getItem("ms-theme") } catch { }
+        root.dataset.theme = th || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+        $("#theme").onclick = () => { const n = root.dataset.theme === "dark" ? "light" : "dark"; root.dataset.theme = n; try { localStorage.setItem("ms-theme", n) } catch { } };
+        let dp; addEventListener("beforeinstallprompt", e => { e.preventDefault(); dp = e; $("#inst").hidden = false });
+        $("#inst").onclick = async () => { dp.prompt(); await dp.userChoice; $("#inst").hidden = true };
+        if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => { });
+        setMat("A", 2, 2, ["1", "2", "3", "4"]); setMat("B", 2, 2, ["5", "6", "7", "8"]); setOp("add"); drawHist();
+    </script>
+</body>
+
+</html>
